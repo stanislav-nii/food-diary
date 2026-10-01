@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import type { Product, MealEntry, MealIngredient } from "@/lib/types";
+import { addMeal, getProducts, addProduct, deleteProduct, updateProduct } from "@/lib/api";
 
 export default function SearchPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -34,11 +35,8 @@ export default function SearchPage() {
   const [ingredientGrams, setIngredientGrams] = useState(0);
 
   const loadProducts = useCallback(async () => {
-    const res = await fetch("/api/products");
-    if (res.ok) {
-      const data = await res.json();
-      setProducts(data);
-    }
+    const data = await getProducts();
+    setProducts(data);
   }, []);
 
   useEffect(() => {
@@ -84,19 +82,17 @@ export default function SearchPage() {
       carbsPer100: product.carbs,
       fatPer100: product.fat,
     };
-    const res = await fetch("/api/meals", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(meal),
-    });
-    if (res.ok) {
+    try {
+      await addMeal(meal);
       showToast(`Logged "${product.name}"`);
+    } catch {
+      showToast("Failed to log");
     }
   };
 
   const handleDelete = async (id: string) => {
-    const res = await fetch(`/api/products?id=${id}`, { method: "DELETE" });
-    if (res.ok) {
+    const ok = await deleteProduct(id);
+    if (ok) {
       loadProducts();
       showToast("Deleted");
     }
@@ -213,16 +209,12 @@ export default function SearchPage() {
       return;
     }
 
-    const method = editingProduct ? "PUT" : "POST";
-    const url = editingProduct
-      ? `/api/products?id=${editingProduct.id}`
-      : "/api/products";
-    const res = await fetch(url, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (res.ok) {
+    try {
+      if (editingProduct) {
+        await updateProduct(editingProduct.id, payload);
+      } else {
+        await addProduct(payload);
+      }
       setIsAddModalOpen(false);
       setEditingProduct(null);
       setFormData({
@@ -240,7 +232,7 @@ export default function SearchPage() {
       setIngredientMode("manual");
       loadProducts();
       showToast(editingProduct ? "Updated" : "Created");
-    } else {
+    } catch {
       alert("Failed to save");
     }
   };

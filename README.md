@@ -1,36 +1,41 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Food Diary (Capacitor / Android)
 
-## Getting Started
+Мобильное приложение-дневник питания на Next.js, собранное как **полностью статическое**
+и упакованное через **Capacitor** для Android. Серверная часть (Next.js Route Handlers
+`/api/*` и файловое хранилище `fs`) удалена — все данные хранятся на устройстве
+через `@capacitor/preferences`.
 
-First, run the development server:
+## Архитектура
+
+- `next.config.ts` → `output: "export"` — сборка в статику в папку `out/`.
+- `src/lib/localstore.ts` — обёртка над `@capacitor/preferences` (SQLite-backed на Android,
+  localStorage в браузере). При первом запуске данные засеиваются из `public/seed-*.json`.
+- `src/lib/api.ts` — локальный «API» (CRUD для meals / goals / products) вместо HTTP-запросов к `/api/*`.
+- `capacitor.config.ts` — `webDir: "out"`, `appId: com.fooddiary.app`.
+- `android/` — нативный Android-проект (создаётся командой `npx cap add android`).
+
+## Скрипты
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run dev          # локальная разработка в браузере (next dev)
+npm run export       # статическая сборка в out/
+npm run cap:sync     # export + npx cap sync android (копирует out/ в нативный проект)
+npm run android      # cap:sync + открыть проект в Android Studio
+npm run build:apk    # cap:sync + ./gradlew assembleDebug (нужен Android SDK)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Сборка APK
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Установите [Android Studio](https://developer.android.com/studio) (SDK + JDK 17+).
+2. `npm install`
+3. Если папки `android/` нет: `npx cap add android`
+4. `npm run build:apk` — готовый APK появится в
+   `android/app/build/outputs/apk/debug/app-debug.apk`.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Либо `npm run android` и запуск/сборка из Android Studio.
 
-## Learn More
+## Примечания
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Данные пользователя персистентны между запусками (Preferences = SQLite в WebView-домене приложения).
+- Шрифты Inter/Material Symbols грузятся с Google Fonts; для полностью офлайн-режима
+  их можно локазовать в `public/`.
