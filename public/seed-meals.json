@@ -1,0 +1,15 @@
+[
+  {
+    "id": "m1",
+    "date": "2025-04-17",
+    "mealType": "breakfast",
+    "productId": "p1",
+    "productName": "Rolled Oats",
+    "quantity": 2,
+    "calories": 300,
+    "protein": 10,
+    "carbs": 54,
+    "fat": 6,
+    "time": "08:15"
+  }
+]
