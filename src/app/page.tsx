@@ -3,6 +3,16 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import type { Product, MealEntry, Goals } from "@/lib/types";
+import { ensureSeeded } from "@/lib/localstore";
+import {
+  getMeals,
+  addMeal,
+  deleteMeal,
+  updateMeal,
+  getGoals,
+  saveGoals,
+  getProducts,
+} from "@/lib/api";
 
 // ---------- Вспомогательные функции для работы с датами ----------
 function startOfWeek(date: Date): Date {
@@ -63,12 +73,12 @@ export default function DashboardPage() {
   // Поиск продукта в модальном окне
   const [productSearch, setProductSearch] = useState("");
 
-  // Загрузка целей и продуктов при монтировании
+  // Загрузка целей и продуктов при монтировании (локальное хранилище вместо /api)
   useEffect(() => {
-    Promise.all([
-      fetch("/api/goals").then((r) => r.json()),
-      fetch("/api/products").then((r) => r.json()),
-    ])
+    ensureSeeded()
+      .then(() =>
+        Promise.all([getGoals(), getProducts()])
+      )
       .then(([goalsData, productsData]) => {
         setGoals(goalsData);
         setEditGoals(goalsData);
@@ -81,11 +91,8 @@ export default function DashboardPage() {
   // Загрузка записей при изменении выбранной даты
   const loadMeals = useCallback(async (dateKey: string) => {
     try {
-      const res = await fetch(`/api/meals?date=${dateKey}`);
-      if (res.ok) {
-        const data = await res.json();
-        setMeals(data);
-      }
+      const data = await getMeals(dateKey);
+      setMeals(data);
     } catch (err) {
       console.error("Failed to load meals:", err);
     }
@@ -121,28 +128,23 @@ export default function DashboardPage() {
       fatPer100: product.fat,
     };
 
-    const res = await fetch("/api/meals", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(newMeal),
-    });
-
-    if (res.ok) {
+    try {
+      await addMeal(newMeal);
       await loadMeals(formatDateKey(selectedDate));
       setIsAddModalOpen(false);
       setGrams(0);
       setSelectedProductId("");
       setProductSearch("");
       setMealTime(new Date().toTimeString().slice(0, 5));
-    } else {
+    } catch {
       alert("Failed to add meal");
     }
   };
 
   // Удаление записи
   const handleDeleteMeal = async (id: string) => {
-    const res = await fetch(`/api/meals?id=${id}`, { method: "DELETE" });
-    if (res.ok) {
+    const ok = await deleteMeal(id);
+    if (ok) {
       await loadMeals(formatDateKey(selectedDate));
     } else {
       alert("Failed to delete meal");
@@ -168,30 +170,22 @@ export default function DashboardPage() {
       fat: Math.round(editingMeal.fatPer100 * factor * 10) / 10,
     };
 
-    const res = await fetch(`/api/meals?id=${editingMeal.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(updatedMeal),
-    });
-    if (res.ok) {
+    try {
+      await updateMeal(editingMeal.id, updatedMeal);
       setEditingMeal(null);
       await loadMeals(formatDateKey(selectedDate));
-    } else {
+    } catch {
       alert("Failed to update meal");
     }
   };
 
   // Сохранение целей
   const handleSaveGoals = async () => {
-    const res = await fetch("/api/goals", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(editGoals),
-    });
-    if (res.ok) {
+    try {
+      await saveGoals(editGoals);
       setGoals(editGoals);
       setIsGoalsModalOpen(false);
-    } else {
+    } catch {
       alert("Failed to update goals");
     }
   };

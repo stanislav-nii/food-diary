@@ -6,9 +6,17 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "export": "next build",
+    "cap:sync": "npm run export && npx cap sync android",
+    "android": "npm run cap:sync && npx cap open android",
+    "build:apk": "npm run cap:sync && cd android && ./gradlew assembleDebug"
   },
   "dependencies": {
+    "@capacitor/android": "^7.6.9",
+    "@capacitor/cli": "^7.6.9",
+    "@capacitor/core": "^7.6.9",
+    "@capacitor/preferences": "^7.0.4",
     "next": "16.3.4",
     "react": "19.2.8",
     "react-dom": "19.2.8"

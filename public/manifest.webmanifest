@@ -1,0 +1,9 @@
+{
+  "name": "Food Diary",
+  "short_name": "Food Diary",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f9f9ff",
+  "theme_color": "#26533b",
+  "icons": []
+}
